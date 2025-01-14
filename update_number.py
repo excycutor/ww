@@ -1,119 +1,182 @@
 #!/usr/bin/env python3
 import os
-import random
 import subprocess
 from datetime import datetime
+import logging
+from colorama import Fore, Style, init
 
-# Получить каталог, в котором находится скрипт
+# Инициализация colorama
+init(autoreset=True)
+
+# Настройка логирования
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler("update_number.log"),  # Логи в файл
+        logging.StreamHandler()  # Логи в консоль
+    ]
+)
+
+# Цвета для уровней логирования
+LOG_COLORS = {
+    logging.INFO: Fore.GREEN,
+    logging.WARNING: Fore.YELLOW,
+    logging.ERROR: Fore.RED,
+    logging.CRITICAL: Fore.RED + Style.BRIGHT
+}
+
+class ColoredFormatter(logging.Formatter):
+    """Форматирование логов с цветами."""
+    def format(self, record):
+        log_message = super().format(record)
+        return LOG_COLORS.get(record.levelno, Fore.WHITE) + log_message
+
+# Применяем цветной форматтер к консольному логгеру
+console_handler = logging.StreamHandler()
+console_handler.setFormatter(ColoredFormatter('%(asctime)s - %(levelname)s - %(message)s'))
+logging.getLogger().addHandler(console_handler)
+
 script_dir = os.path.dirname(os.path.abspath(__file__))
 os.chdir(script_dir)
 
 def read_number():
-    """Прочитать текущее число из файла."""
+    """Чтение числа из файла number.txt."""
     try:
         with open("number.txt", "r") as f:
             return int(f.read().strip())
     except FileNotFoundError:
-        # Создать файл с начальным числом, если он не существует
-        write_number(0)
-        return 0
+        logging.error("Файл number.txt не найден.")
+        raise
+    except ValueError:
+        logging.error("Файл number.txt содержит недопустимое значение.")
+        raise
 
 def write_number(num):
-    """Записать новое число в файл."""
-    with open("number.txt", "w") as f:
-        f.write(str(num))
+    """Запись числа в файл number.txt."""
+    try:
+        with open("number.txt", "w") as f:
+            f.write(str(num))
+        logging.info(f"Число успешно обновлено на {num}.")
+    except Exception as e:
+        logging.error(f"Ошибка при записи числа в файл: {e}")
+        raise
 
-def generate_commit_message():
-    """Создать сообщение коммита с текущей датой и числом."""
-    date = datetime.now().strftime("%Y-%m-%d")
-    number = read_number()
-    return f"feat(counter): update number to {number} on {date}"
+def generate_random_commit_message():
+    """Генерация случайного сообщения для коммита."""
+    try:
+        from transformers import pipeline
+
+        generator = pipeline(
+            "text-generation",
+            model="openai-community/gpt2",
+        )
+        prompt = """
+            Generate a Git commit message following the Conventional Commits standard. The message should include a type, an optional scope, and a subject. Please keep it short. Here are some examples:
+
+            - feat(auth): add user authentication module
+            - fix(api): resolve null pointer exception in user endpoint
+            - docs(readme): update installation instructions
+            - chore(deps): upgrade lodash to version 4.17.21
+            - refactor(utils): simplify date formatting logic
+
+            Now, generate a new commit message:
+        """
+        generated = generator(
+            prompt,
+            max_new_tokens=50,
+            num_return_sequences=1,
+            temperature=0.9,
+            top_k=50,
+            top_p=0.9,
+            truncation=True,
+        )
+        text = generated[0]["generated_text"]
+
+        if "- " in text:
+            return text.rsplit("- ", 1)[-1].strip()
+        else:
+            raise ValueError(f"Unexpected generated text {text}")
+    except Exception as e:
+        logging.error(f"Ошибка при генерации сообщения коммита: {e}")
+        raise
 
 def git_commit():
-    """Добавить и зафиксировать изменения."""
+    """Выполнение коммита изменений."""
     try:
-        # Проверить, находимся ли мы в git-репозитории
-        subprocess.run(["git", "rev-parse", "--is-inside-work-tree"], 
-                      check=True, capture_output=True)
-        
-        # Добавить изменения
+        # Добавляем изменения в индекс Git
         subprocess.run(["git", "add", "number.txt"], check=True)
         
-        # Создать коммит
-        commit_message = generate_commit_message()
+        # Генерация сообщения коммита
+        if "FANCY_JOB_USE_LLM" in os.environ:
+            commit_message = generate_random_commit_message()
+        else:
+            date = datetime.now().strftime("%Y-%m-%d")
+            commit_message = f"Update number: {date}"
+        
+        # Создание коммита
         subprocess.run(["git", "commit", "-m", commit_message], check=True)
-        return True
-    except subprocess.CalledProcessError:
-        print("Ошибка: не git-репозиторий или команда git не удалась")
-        return False
+        logging.info(f"Коммит успешно создан с сообщением: {commit_message}")
+    except subprocess.CalledProcessError as e:
+        logging.error(f"Ошибка при выполнении git-команды: {e}")
+        raise
+    except Exception as e:
+        logging.error(f"Ошибка при создании коммита: {e}")
+        raise
 
 def git_push():
-    """Отправить зафиксированные изменения в удаленный репозиторий."""
+    """Отправка изменений в удаленный репозиторий."""
     try:
-        result = subprocess.run(["git", "push"], 
-                              capture_output=True, 
-                              text=True, 
-                              check=True)
-        print("Изменения успешно отправлены.")
-        return True
-    except subprocess.CalledProcessError as e:
-        print(f"Ошибка при отправке в репозиторий: {e.stderr}")
-        return False
-
-def update_cron_with_random_time():
-    """Обновить crontab с случайным временем для следующего запуска."""
-    random_hour = random.randint(0, 23)
-    random_minute = random.randint(0, 59)
-    
-    # Создать временный файл для crontab
-    cron_file = "/tmp/current_cron"
-    
-    try:
-        # Получить текущий crontab
-        subprocess.run(f"crontab -l > {cron_file} 2>/dev/null || true", 
-                      shell=True, check=True)
-        
-        # Прочитать существующие записи crontab
-        with open(cron_file, "r") as file:
-            lines = [line for line in file.readlines() 
-                    if "update_number.py" not in line]
-        
-        # Добавить новую запись cron
-        new_cron = (f"{random_minute} {random_hour} * * * "
-                   f"cd {script_dir} && "
-                   f"python3 {os.path.join(script_dir, 'update_number.py')}\n")
-        lines.append(new_cron)
-        
-        # Записать обновленный crontab
-        with open(cron_file, "w") as file:
-            file.writelines(lines)
-        
-        # Установить новый crontab
-        subprocess.run(["crontab", cron_file], check=True)
-        print(f"Задание cron запланировано на {random_hour:02d}:{random_minute:02d}")
-        
+        result = subprocess.run(["git", "push"], capture_output=True, text=True)
+        if result.returncode == 0:
+            logging.info("Изменения успешно отправлены в GitHub.")
+        else:
+            error_message = result.stderr.strip()
+            logging.error(f"Ошибка при отправке изменений в GitHub: {error_message}")
+            raise Exception(f"Ошибка Git: {error_message}")
     except Exception as e:
-        print(f"Ошибка при обновлении crontab: {str(e)}")
-    finally:
-        # Очистить временный файл
-        if os.path.exists(cron_file):
-            os.remove(cron_file)
+        logging.error(f"Ошибка при отправке изменений: {e}")
+        raise
+
+def check_remote_repository():
+    """Проверка существования удаленного репозитория."""
+    try:
+        result = subprocess.run(["git", "ls-remote", "https://github.com/excycutor/fancy_job.git"], capture_output=True, text=True)
+        if result.returncode != 0:
+            raise Exception("Репозиторий не найден или недоступен.")
+        logging.info("Репозиторий доступен.")
+    except Exception as e:
+        logging.error(f"Ошибка при проверке репозитория: {e}")
+        raise
 
 def main():
-    """Основная функция выполнения."""
+    """Основная функция скрипта."""
     try:
-        # Прочитать и увеличить число
+        logging.info("Запуск скрипта...")
+        
+        # Проверка доступности репозитория
+        check_remote_repository()
+        
+        # Чтение текущего числа
         current_number = read_number()
+        logging.info(f"Текущее число: {current_number}")
+        
+        # Увеличение числа на 1
         new_number = current_number + 1
+        logging.info(f"Новое число: {new_number}")
+        
+        # Запись нового числа в файл
         write_number(new_number)
         
-        # Зафиксировать и отправить изменения
-        if git_commit() and git_push():
-            # Обновить cron только если операции git прошли успешно
-            update_cron_with_random_time()
+        # Создание коммита
+        git_commit()
         
+        # Отправка изменений в GitHub
+        git_push()
+        
+        logging.info("Скрипт успешно завершен.")
     except Exception as e:
-        print(f"Ошибка в основном выполнении: {str(e)}")
+        logging.error(f"Ошибка в основном потоке: {e}")
         exit(1)
 
 if __name__ == "__main__":
