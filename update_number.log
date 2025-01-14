@@ -39,3 +39,28 @@ error: Your local changes to the following files would be overwritten by merge:
   update_number.py
 error: unable to unlink old 'update_number.log': Invalid argument
 fatal: read-tree failed
+2025-01-14 11:53:14,826 - INFO - Запуск скрипта...
+2025-01-14 11:53:16,290 - ERROR - Ошибка при обновлении локальной ветки: From https://github.com/excycutor/fancy_job
+ * branch            main       -> FETCH_HEAD
+error: Your local changes to the following files would be overwritten by merge:
+	update_number.py
+Please commit your changes or stash them before you merge.
+Aborting
+error: unable to unlink old 'update_number.log': Invalid argument
+fatal: read-tree failed
+2025-01-14 11:53:16,291 - ERROR - Ошибка при обновлении локальной ветки: Ошибка Git: From https://github.com/excycutor/fancy_job
+ * branch            main       -> FETCH_HEAD
+error: Your local changes to the following files would be overwritten by merge:
+	update_number.py
+Please commit your changes or stash them before you merge.
+Aborting
+error: unable to unlink old 'update_number.log': Invalid argument
+fatal: read-tree failed
+2025-01-14 11:53:16,292 - ERROR - Ошибка в основном потоке: Ошибка Git: From https://github.com/excycutor/fancy_job
+ * branch            main       -> FETCH_HEAD
+error: Your local changes to the following files would be overwritten by merge:
+	update_number.py
+Please commit your changes or stash them before you merge.
+Aborting
+error: unable to unlink old 'update_number.log': Invalid argument
+fatal: read-tree failed
