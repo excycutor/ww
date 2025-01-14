@@ -20,3 +20,22 @@ fatal: repository 'https://github.com/excycutor/great_job.git/' not found
 2025-01-14 11:39:21,099 - INFO - Коммит успешно создан с сообщением: Update number: 2025-01-14
 2025-01-14 11:39:23,425 - INFO - Изменения успешно отправлены в GitHub.
 2025-01-14 11:39:23,426 - INFO - Скрипт успешно завершен.
+2025-01-14 11:49:29,385 - INFO - Запуск скрипта...
+2025-01-14 11:49:30,789 - ERROR - Ошибка при обновлении локальной ветки: From https://github.com/excycutor/fancy_job
+ * branch            main       -> FETCH_HEAD
+error: Your local changes to the following files would be overwritten by merge:
+  update_number.py
+error: unable to unlink old 'update_number.log': Invalid argument
+fatal: read-tree failed
+2025-01-14 11:49:30,790 - ERROR - Ошибка при обновлении локальной ветки: Ошибка Git: From https://github.com/excycutor/fancy_job
+ * branch            main       -> FETCH_HEAD
+error: Your local changes to the following files would be overwritten by merge:
+  update_number.py
+error: unable to unlink old 'update_number.log': Invalid argument
+fatal: read-tree failed
+2025-01-14 11:49:30,791 - ERROR - Ошибка в основном потоке: Ошибка Git: From https://github.com/excycutor/fancy_job
+ * branch            main       -> FETCH_HEAD
+error: Your local changes to the following files would be overwritten by merge:
+  update_number.py
+error: unable to unlink old 'update_number.log': Invalid argument
+fatal: read-tree failed
