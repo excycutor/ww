@@ -4,6 +4,11 @@ import subprocess
 from datetime import datetime
 import logging
 from colorama import Fore, Style, init
+import sys
+import io
+
+# Настройка кодировки UTF-8 для стандартного вывода
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 
 # Инициализация colorama
 init(autoreset=True)
@@ -13,8 +18,8 @@ logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler("update_number.log"),  # Логи в файл
-        logging.StreamHandler()  # Логи в консоль
+        logging.FileHandler("update_number.log", encoding='utf-8'),  # Логи в файл с UTF-8
+        logging.StreamHandler(sys.stdout)  # Логи в консоль с UTF-8
     ]
 )
 
@@ -33,7 +38,7 @@ class ColoredFormatter(logging.Formatter):
         return LOG_COLORS.get(record.levelno, Fore.WHITE) + log_message
 
 # Применяем цветной форматтер к консольному логгеру
-console_handler = logging.StreamHandler()
+console_handler = logging.StreamHandler(sys.stdout)
 console_handler.setFormatter(ColoredFormatter('%(asctime)s - %(levelname)s - %(message)s'))
 logging.getLogger().addHandler(console_handler)
 
@@ -43,7 +48,7 @@ os.chdir(script_dir)
 def read_number():
     """Чтение числа из файла number.txt."""
     try:
-        with open("number.txt", "r") as f:
+        with open("number.txt", "r", encoding='utf-8') as f:
             return int(f.read().strip())
     except FileNotFoundError:
         logging.error("Файл number.txt не найден.")
@@ -55,7 +60,7 @@ def read_number():
 def write_number(num):
     """Запись числа в файл number.txt."""
     try:
-        with open("number.txt", "w") as f:
+        with open("number.txt", "w", encoding='utf-8') as f:
             f.write(str(num))
         logging.info(f"Число успешно обновлено на {num}.")
     except Exception as e:
